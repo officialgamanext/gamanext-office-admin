@@ -25,7 +25,8 @@ import {
   Filter,
   ArrowRight,
   AlertCircle,
-  Pencil
+  Pencil,
+  Monitor
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
 import '../CSS/EmployeeDetails.css';
@@ -41,6 +42,7 @@ const EmployeeDetails = () => {
   const [allocations, setAllocations] = useState([]);
   const [timesheets, setTimesheets] = useState([]);
   const [leaves, setLeaves] = useState([]);
+  const [wfhRequests, setWfhRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Allocation State
@@ -72,15 +74,25 @@ const EmployeeDetails = () => {
   });
   const [leaveLoading, setLeaveLoading] = useState(false);
 
+  // WFH State
+  const [isAddingWfh, setIsAddingWfh] = useState(false);
+  const [wfhForm, setWfhForm] = useState({
+    reason: '',
+    fromDate: new Date().toISOString().split('T')[0],
+    toDate: ''
+  });
+  const [wfhLoading, setWfhLoading] = useState(false);
+
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [empRes, projRes, allocRes, tsRes, leaveRes] = await Promise.all([
+      const [empRes, projRes, allocRes, tsRes, leaveRes, wfhRes] = await Promise.all([
         axios.get(`${API_URL}/collection/employees/${id}`),
         axios.get(`${API_URL}/collection/projects`),
         axios.get(`${API_URL}/collection/project_allocations`),
         axios.get(`${API_URL}/collection/timesheets`),
-        axios.get(`${API_URL}/collection/leaves`)
+        axios.get(`${API_URL}/collection/leaves`),
+        axios.get(`${API_URL}/collection/wfh_requests`)
       ]);
       
       setEmployee(empRes.data);
@@ -104,6 +116,11 @@ const EmployeeDetails = () => {
         .filter(l => l.employeeID === id)
         .sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
       setLeaves(empLeaves);
+
+      const empWfh = wfhRes.data
+        .filter(w => w.employeeID === id)
+        .sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
+      setWfhRequests(empWfh);
       
     } catch (error) {
       console.error('Error fetching details:', error);
@@ -252,6 +269,61 @@ const EmployeeDetails = () => {
     }
   };
 
+  const handleApplyWfh = async (e) => {
+    e.preventDefault();
+    const { reason, fromDate, toDate } = wfhForm;
+
+    if (!reason || !fromDate || !toDate) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    const start = new Date(fromDate);
+    const end = new Date(toDate);
+    const today = new Date();
+    today.setHours(0,0,0,0);
+
+    // Rule 1: Max 30 days
+    const diffTime = Math.abs(end - start);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    if (diffDays > 30) {
+      toast.error('Maximum duration for WFH is 30 days');
+      return;
+    }
+
+    // Rule 2: Not in the past
+    if (start < today) {
+      toast.error('WFH cannot be applied for past dates');
+      return;
+    }
+
+    setWfhLoading(true);
+    const loadToast = toast.loading('Submitting WFH request...');
+    try {
+      const wfhID = `WFH${Date.now()}`;
+      const wfhData = {
+        id: wfhID,
+        employeeID: id,
+        employeeName: `${employee.firstName} ${employee.lastName}`,
+        reason,
+        fromDate,
+        toDate,
+        days: diffDays,
+        status: 'Applied',
+        appliedAt: new Date().toISOString()
+      };
+      await axios.post(`${API_URL}/collection/wfh_requests/${wfhID}`, wfhData);
+      toast.success('WFH request submitted!', { id: loadToast });
+      setIsAddingWfh(false);
+      setWfhForm({ reason: '', fromDate: new Date().toISOString().split('T')[0], toDate: '' });
+      fetchData();
+    } catch (error) {
+      toast.error('Submission failed', { id: loadToast });
+    } finally {
+      setWfhLoading(false);
+    }
+  };
+
   const filteredTimesheets = timesheets.filter(ts => {
     if (!dateFilter.start && !dateFilter.end) return true;
     const tsDate = new Date(ts.date);
@@ -279,6 +351,7 @@ const EmployeeDetails = () => {
     { name: 'Project Allocation', icon: <Briefcase size={18} /> },
     { name: 'Timesheet', icon: <Clock size={18} /> },
     { name: 'Applied Leaves', icon: <FileText size={18} /> },
+    { name: 'Work from home request', icon: <Monitor size={18} /> },
     { name: 'Salary', icon: <DollarSign size={18} /> },
   ];
 
@@ -419,6 +492,116 @@ const EmployeeDetails = () => {
                   </tbody>
                </table>
             </div>
+          </div>
+        );
+
+      case 'Work from home request':
+        return (
+          <div className="leaves-container">
+            <div className="section-header" style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+              <h3>Work From Home Requests</h3>
+              <button className="add-employee-btn" onClick={() => setIsAddingWfh(!isAddingWfh)}>
+                <Plus size={18} />
+                <span>Request WFH</span>
+              </button>
+            </div>
+            
+            {isAddingWfh && (
+              <div className="section-card" style={{ marginBottom: '2rem', background: '#f8fafc', border: '1px dashed var(--primary)' }}>
+                <form onSubmit={handleApplyWfh}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                    <div className="input-field">
+                      <label>From Date <span>*</span></label>
+                      <input 
+                        type="date" 
+                        required 
+                        value={wfhForm.fromDate} 
+                        onChange={(e) => setWfhForm({ ...wfhForm, fromDate: e.target.value })} 
+                      />
+                    </div>
+                    <div className="input-field">
+                      <label>To Date <span>*</span></label>
+                      <input 
+                        type="date" 
+                        required 
+                        value={wfhForm.toDate} 
+                        onChange={(e) => setWfhForm({ ...wfhForm, toDate: e.target.value })} 
+                      />
+                    </div>
+                  </div>
+                  <div className="input-field" style={{ marginBottom: '1.5rem' }}>
+                    <label>Reason <span>*</span></label>
+                    <textarea 
+                      rows="2" 
+                      placeholder="Why do you need work from home?" 
+                      required 
+                      style={{ width: '100%', padding: '0.75rem', borderRadius: '0.5rem', border: '1px solid var(--border)', outline: 'none' }} 
+                      value={wfhForm.reason} 
+                      onChange={(e) => setWfhForm({ ...wfhForm, reason: e.target.value })}
+                    ></textarea>
+                  </div>
+                  <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                    <button type="button" className="cancel-btn" onClick={() => setIsAddingWfh(false)}>Cancel</button>
+                    <button type="submit" className="save-btn" disabled={wfhLoading}>
+                      {wfhLoading ? <Loader2 size={18} className="animate-spin" /> : 'Submit Request'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            <div className="section-card">
+              <table className="project-table">
+                <thead>
+                  <tr>
+                    <th>Dates</th>
+                    <th>Duration</th>
+                    <th>Reason</th>
+                    <th style={{ textAlign: 'center' }}>Status</th>
+                    <th style={{ textAlign: 'center' }}>Applied On</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {wfhRequests.length === 0 ? (
+                    <tr><td colSpan="5" style={{ textAlign: 'center', padding: '3rem', color: '#64748b' }}>No WFH requests found.</td></tr>
+                  ) : wfhRequests.map((req) => (
+                    <tr key={req.id}>
+                      <td>
+                        <div style={{ fontSize: '0.875rem', fontWeight: 600 }}>
+                          {new Date(req.fromDate).toLocaleDateString()} - {new Date(req.toDate).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td>{req.days} Days</td>
+                      <td style={{ maxWidth: '250px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: '#64748b', fontSize: '0.8rem' }} title={req.reason}>
+                        {req.reason}
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <span className={`status-badge status-${req.status.toLowerCase()}`}>
+                          {req.status}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {new Date(req.appliedAt).toLocaleDateString()}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+
+      case 'Salary':
+        return (
+          <div className="section-card" style={{ padding: '4rem', textAlign: 'center' }}>
+             <div style={{ width: '80px', height: '80px', background: 'var(--primary-light)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary)', margin: '0 auto 1.5rem' }}>
+               <DollarSign size={40} />
+             </div>
+             <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-main)', marginBottom: '0.5rem' }}>Payroll Management</h3>
+             <p style={{ color: '#64748b', maxWidth: '400px', margin: '0 auto' }}>Detailed salary structure, payslips, and tax information for {employee.firstName} will be available here.</p>
+             <button className="manage-btn" style={{ marginTop: '2rem' }}>Configure Salary Structure</button>
           </div>
         );
 
