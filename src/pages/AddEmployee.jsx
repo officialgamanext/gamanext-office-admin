@@ -120,7 +120,7 @@ const AddEmployee = () => {
       };
 
       // 2. Save to Firestore
-      await axios.post(`${API_URL}/collection/employees/${formData.employeeID}`, finalData);
+      await axios.post(`${API_URL}/collection/employees/${formData.email}`, finalData);
 
       // 3. Create Auth User
       await axios.post(`${API_URL}/auth/register`, {

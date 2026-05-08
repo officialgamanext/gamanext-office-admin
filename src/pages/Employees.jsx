@@ -181,7 +181,7 @@ const Employees = () => {
                       <td style={{ textAlign: 'center' }}>
                         <button 
                           className="manage-btn"
-                          onClick={() => navigate(`/employees/${emp.employeeID}`)}
+                          onClick={() => navigate(`/employees/${emp.id}`)}
                         >
                           Manage
                         </button>
