@@ -324,6 +324,17 @@ const EmployeeDetails = () => {
     }
   };
 
+  const updateWfhStatus = async (wfhID, status) => {
+    const loadToast = toast.loading(`Updating status to ${status}...`);
+    try {
+      await axios.put(`${API_URL}/collection/wfh_requests/${wfhID}`, { status });
+      toast.success(`WFH ${status}`, { id: loadToast });
+      fetchData();
+    } catch (error) {
+      toast.error('Status update failed', { id: loadToast });
+    }
+  };
+
   const filteredTimesheets = timesheets.filter(ts => {
     if (!dateFilter.start && !dateFilter.end) return true;
     const tsDate = new Date(ts.date);
@@ -558,7 +569,7 @@ const EmployeeDetails = () => {
                     <th>Duration</th>
                     <th>Reason</th>
                     <th style={{ textAlign: 'center' }}>Status</th>
-                    <th style={{ textAlign: 'center' }}>Applied On</th>
+                    <th style={{ textAlign: 'center' }}>Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -581,8 +592,26 @@ const EmployeeDetails = () => {
                         </span>
                       </td>
                       <td style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                          {new Date(req.appliedAt).toLocaleDateString()}
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                          {req.status === 'Applied' && (
+                            <>
+                              <button 
+                                onClick={() => updateWfhStatus(req.id, 'Approved')} 
+                                style={{ background: '#ecfdf5', color: '#10b981', border: 'none', padding: '0.35rem 0.6rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                              >
+                                Approve
+                              </button>
+                              <button 
+                                onClick={() => updateWfhStatus(req.id, 'Rejected')} 
+                                style={{ background: '#fff1f2', color: '#e11d48', border: 'none', padding: '0.35rem 0.6rem', borderRadius: '0.4rem', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          <div style={{ fontSize: '0.75rem', color: '#64748b', marginLeft: req.status === 'Applied' ? '1rem' : '0' }}>
+                            {new Date(req.appliedAt).toLocaleDateString()}
+                          </div>
                         </div>
                       </td>
                     </tr>
