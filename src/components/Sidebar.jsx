@@ -35,6 +35,7 @@ const Sidebar = () => {
     { name: 'Payments', icon: <CreditCard />, path: '/payments' },
     { name: 'Documents', icon: <Folder />, path: '/documents' },
     { name: 'Calendar', icon: <Calendar />, path: '/calendar' },
+    { name: 'Holidays', icon: <Calendar />, path: '/holidays' },
     { name: 'Settings', icon: <Settings />, path: '/settings' },
   ];
 

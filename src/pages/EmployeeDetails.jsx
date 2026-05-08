@@ -43,6 +43,7 @@ const EmployeeDetails = () => {
   const [timesheets, setTimesheets] = useState([]);
   const [leaves, setLeaves] = useState([]);
   const [wfhRequests, setWfhRequests] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const [loading, setLoading] = useState(true);
   
   // Allocation State
@@ -86,13 +87,14 @@ const EmployeeDetails = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [empRes, projRes, allocRes, tsRes, leaveRes, wfhRes] = await Promise.all([
+      const [empRes, projRes, allocRes, tsRes, leaveRes, wfhRes, holidayRes] = await Promise.all([
         axios.get(`${API_URL}/collection/employees/${id}`),
         axios.get(`${API_URL}/collection/projects`),
         axios.get(`${API_URL}/collection/project_allocations`),
         axios.get(`${API_URL}/collection/timesheets`),
         axios.get(`${API_URL}/collection/leaves`),
-        axios.get(`${API_URL}/collection/wfh_requests`)
+        axios.get(`${API_URL}/collection/wfh_requests`),
+        axios.get(`${API_URL}/collection/holidays`)
       ]);
       
       setEmployee(empRes.data);
@@ -121,6 +123,7 @@ const EmployeeDetails = () => {
         .filter(w => w.employeeID === id)
         .sort((a, b) => new Date(b.fromDate) - new Date(a.fromDate));
       setWfhRequests(empWfh);
+      setHolidays(holidayRes.data || []);
       
     } catch (error) {
       console.error('Error fetching details:', error);
@@ -175,6 +178,15 @@ const EmployeeDetails = () => {
       const latestAlloc = allocations[0];
       if (!latestAlloc) {
         toast.error('No active allocation found', { id: loadToast });
+        return;
+      }
+
+      // Holiday Check
+      const isHoliday = holidays.some(h => h.date === timesheetForm.date);
+      if (isHoliday) {
+        const hName = holidays.find(h => h.date === timesheetForm.date).name;
+        toast.error(`Cannot add timesheet for a holiday: ${hName}`, { id: loadToast });
+        setTimesheetLoading(false);
         return;
       }
       const entryData = {

@@ -10,6 +10,7 @@ import Timesheet from './pages/Timesheet';
 import LeaveRequests from './pages/LeaveRequests';
 import Customers from './pages/Customers';
 import CustomerDetails from './pages/CustomerDetails';
+import Holidays from './pages/Holidays';
 import './index.css';
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
           <Route path="/leave" element={<LeaveRequests />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetails />} />
+          <Route path="/holidays" element={<Holidays />} />
           <Route path="*" element={<Dashboard />} />
         </Routes>
       </div>
