@@ -6,6 +6,7 @@ import Employees from './pages/Employees';
 import EmployeeDetails from './pages/EmployeeDetails';
 import AddEmployee from './pages/AddEmployee';
 import Projects from './pages/Projects';
+import LeaveRequests from './pages/LeaveRequests';
 import Customers from './pages/Customers';
 import CustomerDetails from './pages/CustomerDetails';
 import './index.css';
@@ -41,6 +42,7 @@ function App() {
           <Route path="/employees/add" element={<AddEmployee />} />
           <Route path="/employees/:id" element={<EmployeeDetails />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/leave" element={<LeaveRequests />} />
           <Route path="/customers" element={<Customers />} />
           <Route path="/customers/:id" element={<CustomerDetails />} />
           <Route path="*" element={<Dashboard />} />
