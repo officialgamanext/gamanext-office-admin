@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
   Camera, 
@@ -98,11 +99,12 @@ const AddEmployee = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.employeeID) {
-      alert('Employee ID is required');
+      toast.error('Employee ID is required');
       return;
     }
 
     setLoading(true);
+    const loadToast = toast.loading('Adding employee and uploading images...');
     try {
       // 1. Upload Images
       const profilePhotoUrl = await uploadImage(files.profilePhoto);
@@ -127,13 +129,13 @@ const AddEmployee = () => {
         displayName: `${formData.firstName} ${formData.lastName}`
       });
 
-      alert('Employee added successfully!');
+      toast.success('Employee added successfully!', { id: loadToast });
       navigate('/employees');
     } catch (error) {
       console.error('Submission failed:', error);
       const errorData = error.response?.data;
       const errorMsg = errorData?.details || errorData?.error || error.message || 'Failed to save employee';
-      alert(`Error: ${errorMsg}`);
+      toast.error(`Error: ${errorMsg}`, { id: loadToast });
     } finally {
       setLoading(false);
     }

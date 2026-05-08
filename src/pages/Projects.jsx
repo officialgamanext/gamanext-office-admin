@@ -12,6 +12,7 @@ import {
   Edit3
 } from 'lucide-react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import '../CSS/Projects.css';
@@ -27,7 +28,6 @@ const Projects = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   
-  // Filters and Search
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
@@ -42,7 +42,6 @@ const Projects = () => {
     setLoading(true);
     try {
       const response = await axios.get(`${API_URL}/collection/projects`);
-      // Sort latest first (assuming createdAt exists)
       const sorted = response.data.sort((a, b) => {
         return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
       });
@@ -51,6 +50,8 @@ const Projects = () => {
       console.error('Error fetching projects:', error);
       if (error.response?.status === 404) {
         setProjects([]);
+      } else {
+        toast.error('Failed to fetch projects');
       }
     } finally {
       setLoading(false);
@@ -76,18 +77,17 @@ const Projects = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.startDate) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
 
     setSaveLoading(true);
+    const loadToast = toast.loading(isEditMode ? 'Updating project...' : 'Creating project...');
     try {
       if (isEditMode) {
-        // Update
         await axios.put(`${API_URL}/collection/projects/${formData.id}`, formData);
-        alert('Project updated successfully!');
+        toast.success('Project updated successfully!', { id: loadToast });
       } else {
-        // Create
         const projectID = `PRJ${Date.now().toString().slice(-6)}`;
         const projectData = {
           ...formData,
@@ -95,14 +95,14 @@ const Projects = () => {
           createdAt: new Date().toISOString()
         };
         await axios.post(`${API_URL}/collection/projects/${projectID}`, projectData);
-        alert('Project created successfully!');
+        toast.success('Project created successfully!', { id: loadToast });
       }
       
       setIsModalOpen(false);
       fetchProjects();
     } catch (error) {
       console.error('Save failed:', error);
-      alert(error.response?.data?.details || 'Failed to save project');
+      toast.error(error.response?.data?.details || 'Failed to save project', { id: loadToast });
     } finally {
       setSaveLoading(false);
     }
@@ -110,15 +110,16 @@ const Projects = () => {
 
   const handleDelete = async (projectID) => {
     if (!window.confirm('Are you sure you want to delete this project?')) return;
+    const loadToast = toast.loading('Deleting project...');
     try {
       await axios.delete(`${API_URL}/collection/projects/${projectID}`);
+      toast.success('Project deleted successfully!', { id: loadToast });
       fetchProjects();
     } catch (error) {
-      alert('Delete failed');
+      toast.error('Delete failed', { id: loadToast });
     }
   };
 
-  // Filter logic
   const filteredProjects = projects.filter(prj => {
     const matchesSearch = prj.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                           prj.id?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -148,7 +149,6 @@ const Projects = () => {
           </div>
 
           <div className="table-card">
-            {/* Filter Bar */}
             <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '1rem' }}>
                <div className="search-bar" style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
                   <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
@@ -247,7 +247,6 @@ const Projects = () => {
           </div>
         </div>
 
-        {/* Project Modal (Add/Edit) */}
         {isModalOpen && (
           <div className="modal-overlay">
             <div className="modal-content">

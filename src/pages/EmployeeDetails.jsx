@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { 
   ChevronLeft, 
   Edit3, 
@@ -106,6 +107,7 @@ const EmployeeDetails = () => {
       
     } catch (error) {
       console.error('Error fetching details:', error);
+      toast.error('Failed to fetch data');
     } finally {
       setLoading(false);
     }
@@ -118,6 +120,7 @@ const EmployeeDetails = () => {
   const handleAllocate = async () => {
     if (!selectedProject) return;
     setIsAllocating(true);
+    const loadToast = toast.loading('Allocating project...');
     try {
       const project = projects.find(p => p.id === selectedProject);
       const allocationID = `ALC${Date.now()}`;
@@ -131,12 +134,12 @@ const EmployeeDetails = () => {
         status: 'Active'
       };
       await axios.post(`${API_URL}/collection/project_allocations/${allocationID}`, allocationData);
-      alert('Project allocated successfully!');
+      toast.success('Project allocated successfully!', { id: loadToast });
       setSelectedProject('');
       setSearchProject('');
       fetchData();
     } catch (error) {
-      alert('Allocation failed');
+      toast.error('Allocation failed', { id: loadToast });
     } finally {
       setIsAllocating(false);
     }
@@ -145,15 +148,16 @@ const EmployeeDetails = () => {
   const handleSaveTimesheet = async (e) => {
     e.preventDefault();
     if (!timesheetForm.hours || !timesheetForm.date) {
-      alert('Please fill in all required fields');
+      toast.error('Please fill in all required fields');
       return;
     }
     setTimesheetLoading(true);
+    const loadToast = toast.loading('Saving timesheet...');
     try {
       const tsID = `TS${Date.now()}`;
       const latestAlloc = allocations[0];
       if (!latestAlloc) {
-        alert('No active allocation found');
+        toast.error('No active allocation found', { id: loadToast });
         return;
       }
       const entryData = {
@@ -165,12 +169,12 @@ const EmployeeDetails = () => {
         createdAt: new Date().toISOString()
       };
       await axios.post(`${API_URL}/collection/timesheets/${tsID}`, entryData);
-      alert('Timesheet saved!');
+      toast.success('Timesheet saved!', { id: loadToast });
       setIsAddingTimesheet(false);
       setTimesheetForm({ ...timesheetForm, hours: '', description: '' });
       fetchData();
     } catch (error) {
-      alert('Failed to save timesheet');
+      toast.error('Failed to save timesheet', { id: loadToast });
     } finally {
       setTimesheetLoading(false);
     }
@@ -193,24 +197,24 @@ const EmployeeDetails = () => {
       toDate: lv.toDate
     });
     setIsAddingLeave(true);
-    // Scroll to form
     window.scrollTo({ top: 500, behavior: 'smooth' });
   };
 
   const handleApplyLeave = async (e) => {
     e.preventDefault();
     if (!leaveForm.fromDate || !leaveForm.toDate || !leaveForm.reason) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
 
     setLeaveLoading(true);
+    const loadToast = toast.loading(isEditingLeave ? 'Updating leave...' : 'Applying leave...');
     try {
       const days = Math.ceil((new Date(leaveForm.toDate) - new Date(leaveForm.fromDate)) / (1000 * 60 * 60 * 24)) + 1;
       
       if (isEditingLeave) {
         await axios.put(`${API_URL}/collection/leaves/${editingLeaveID}`, { ...leaveForm, days });
-        alert('Leave updated successfully!');
+        toast.success('Leave updated successfully!', { id: loadToast });
       } else {
         const leaveID = `LV${Date.now()}`;
         const leaveData = {
@@ -223,7 +227,7 @@ const EmployeeDetails = () => {
           appliedAt: new Date().toISOString()
         };
         await axios.post(`${API_URL}/collection/leaves/${leaveID}`, leaveData);
-        alert('Leave applied successfully!');
+        toast.success('Leave applied successfully!', { id: loadToast });
       }
       
       setIsAddingLeave(false);
@@ -231,19 +235,20 @@ const EmployeeDetails = () => {
       setLeaveForm({ type: 'Casual Leave', reason: '', fromDate: '', toDate: '' });
       fetchData();
     } catch (error) {
-      alert('Action failed');
+      toast.error('Action failed', { id: loadToast });
     } finally {
       setLeaveLoading(false);
     }
   };
 
   const updateLeaveStatus = async (leaveID, status) => {
+    const loadToast = toast.loading(`Updating status to ${status}...`);
     try {
       await axios.put(`${API_URL}/collection/leaves/${leaveID}`, { status });
-      alert(`Leave ${status}`);
+      toast.success(`Leave ${status}`, { id: loadToast });
       fetchData();
     } catch (error) {
-      alert('Status update failed');
+      toast.error('Status update failed', { id: loadToast });
     }
   };
 
