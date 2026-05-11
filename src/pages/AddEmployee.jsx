@@ -39,6 +39,8 @@ const AddEmployee = () => {
     pincode: '',
     aadharNumber: '',
     panNumber: '',
+    dateOfBirth: '',
+    dateOfJoining: '',
     bankName: '',
     accountNumber: '',
     ifscCode: '',
@@ -232,6 +234,10 @@ const AddEmployee = () => {
                     <input type="text" name="phone" placeholder="Enter phone number" style={{ flex: 1 }} required onChange={handleInputChange} />
                   </div>
                 </div>
+                <div className="input-field">
+                  <label>Date of Birth <span>*</span></label>
+                  <input type="date" name="dateOfBirth" required onChange={handleInputChange} />
+                </div>
               </div>
               <div className="input-group">
                 <div className="input-field">
@@ -267,6 +273,10 @@ const AddEmployee = () => {
                   <div className="input-field">
                     <label>Designation <span>*</span></label>
                     <input type="text" name="designation" placeholder="Enter designation" required onChange={handleInputChange} />
+                  </div>
+                  <div className="input-field">
+                    <label>Date of Joining <span>*</span></label>
+                    <input type="date" name="dateOfJoining" required onChange={handleInputChange} />
                   </div>
                 </div>
               </div>
