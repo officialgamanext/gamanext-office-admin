@@ -14,14 +14,24 @@ import {
   Calendar,
   Settings,
   Headphones,
-  ChevronRight
+  ChevronRight,
+  LogOut
 } from 'lucide-react';
 import './../CSS/Sidebar.css';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import Logo from '../assets/logo-h.png';
+import toast from 'react-hot-toast';
 
 const Sidebar = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem('isAdminLoggedIn');
+    toast.success('Logged out successfully');
+    navigate('/login');
+  };
+
   const navItems = [
     { name: 'Dashboard', icon: <LayoutDashboard />, path: '/' },
     { name: 'Projects', icon: <Briefcase />, path: '/projects' },
@@ -59,6 +69,10 @@ const Sidebar = () => {
       </nav>
 
       <div className="sidebar-footer">
+        <button className="logout-btn" onClick={handleLogout}>
+          <LogOut size={18} />
+          <span>Logout</span>
+        </button>
         <div className="help-card">
           <div className="help-info">
             <div className="help-icon-bg">
